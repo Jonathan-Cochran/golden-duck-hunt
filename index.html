@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vault of Years • Return of the Golden Duck</title>
+  <style>
+    :root { --bg:#0b0f14; --card:#111821; --ink:#e7f0ff; --muted:#99a7b6; --accent:#ffd166;}
+    *{box-sizing:border-box} body{
+      margin:0; font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color:var(--ink); background:linear-gradient(180deg,#0b0f14 0%,#0e1520 100%); 
+      display:flex; min-height:100dvh; align-items:center; justify-content:center; padding:24px;
+    }
+    .card{
+      width:min(720px,100%); background:var(--card); border:1px solid #1e2a36; border-radius:16px; 
+      padding:28px 22px; box-shadow:0 20px 60px rgba(0,0,0,.35);
+    }
+    h1{margin:0 0 8px;font-size:1.6rem}
+    h2{margin:18px 0 10px;font-size:1.15rem;color:var(--accent)}
+    p{line-height:1.5;color:var(--muted);margin:10px 0}
+    .inputrow{display:flex; gap:10px; margin:16px 0 6px}
+    input[type="number"]{
+      flex:1; padding:12px 14px; font-size:1.1rem; border-radius:12px; border:1px solid #263241; 
+      background:#0c121a; color:var(--ink); outline:none;
+    }
+    button{
+      padding:12px 16px; border:0; border-radius:12px; background:var(--accent); color:#2a1f00; 
+      font-weight:700; cursor:pointer;
+    }
+    .note{font-size:.95rem}
+    .success{border:1px solid #2d4; background:#0f2; background:rgba(40,220,120,.08); color:#bff3cf;
+      padding:14px; border-radius:12px; margin-top:16px; display:none}
+    .riddles{display:none; margin-top:14px}
+    code{background:#0c121a; padding:2px 6px; border-radius:6px}
+    .tiny{font-size:.82rem; color:#7f8ea0; margin-top:12px}
+    footer{margin-top:16px; font-size:.85rem; color:#6f7d8e}
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-labelledby="title">
+    <h1 id="title">🦆 The Duck’s Vault of Years</h1>
+    <p>
+      Buried beneath circuits and cobwebs, the Golden Duck scratched two years into the lid of an ancient vault:
+      the year <strong>Nationwide first installed a computer</strong> and the year it
+      <strong>launched its first public-facing website</strong>.
+    </p>
+    <p class="note"><strong>Combine the two years.</strong> Enter their <em>sum</em> to attempt the vault.</p>
+
+    <div class="inputrow" aria-label="Vault code entry">
+      <input id="code" type="number" inputmode="numeric" placeholder="Enter 4-digit code" autocomplete="one-time-code" />
+      <button id="try">Unlock</button>
+    </div>
+    <div id="msg" class="tiny" role="status" aria-live="polite"></div>
+
+    <section id="ok" class="success" aria-live="polite">
+      ✅ <strong>Access granted.</strong> The vault slides open and reveals your next instructions.
+      <div class="riddles" id="riddles">
+        <h2>Step 3 • Trail of the Duck</h2>
+        <p>Find the three landmarks hinted below. At each, there is a small symbol. Take a selfie with the landmark and symbol, then return to the Shelter House.</p>
+        <ul>
+          <li><strong>🔺 Riddle 1 — Three Pillars:</strong> “I honor a man of <em>charity, unity, temperance</em>. Three virtues, three columns, one memory carved in stone.”</li>
+          <li><strong>🌀 Riddle 2 — Mighty Red Oak:</strong> “I stand older than your footsteps; near the gathering place I guard, spreading shade where the Duck once dreamed.”</li>
+          <li><strong>🌿 Riddle 3 — Painted Mushrooms:</strong> “Not forest-born, but made of steel; three caps by the ground—odd fungi where no fungi should be.”</li>
+        </ul>
+        <p class="tiny">Bring all three photos to the Shelter House to receive your next clue.</p>
+      </div>
+    </section>
+
+    <footer>Be fair. Be clever. Quack on.</footer>
+  </main>
+
+  <script>
+    const good = 3951;  // 1955 + 1996
+    const elCode = document.getElementById('code');
+    const elTry  = document.getElementById('try');
+    const elMsg  = document.getElementById('msg');
+    const elOK   = document.getElementById('ok');
+    const elRids = document.getElementById('riddles');
+
+    function attempt() {
+      const val = Number((elCode.value||'').trim());
+      if (!val) { elMsg.textContent = 'Enter the 4-digit sum to try the vault.'; return; }
+      if (val === good) {
+        elOK.style.display = 'block';
+        elRids.style.display = 'block';
+        elMsg.textContent = '';
+        elCode.setAttribute('disabled','true');
+        elTry.setAttribute('disabled','true');
+      } else {
+        elMsg.textContent = '⛔ Incorrect. The Duck remembers the dawn of computing and the dawn of the web—check the years.';
+      }
+    }
+    elTry.addEventListener('click', attempt);
+    elCode.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ attempt(); }});
+  </script>
+
+  <!--
+    🥚 EASTER EGG — for those who view source:
+    You looked beneath the feathers. The Duck rewards curiosity.
+
+    Secret Map of Step 3 symbols (pins):  https://tinyurl.com/GoldenDuckMap
+    (replace with your actual Google My Maps link)
+
+    You still need to visit each spot and bring photos to the Shelter House. No photo = no map reward.
+  -->
+</body>
+</html>
