@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Final Vault • Golden Duck</title>
+  <style>
+    :root{--bg:#071018;--card:#0f1720;--accent:#ffd166;--muted:#9fb0c2}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(180deg,var(--bg),#071827);color:#e8f5ff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{width:min(820px,100%);background:var(--card);border-radius:12px;padding:22px;border:1px solid rgba(255,255,255,.03);box-shadow:0 12px 40px rgba(2,6,12,.6)}
+    h1{margin:0 0 8px;color:var(--accent)}
+    p{margin:10px 0;color:var(--muted);line-height:1.4}
+    .row{display:flex;gap:10px;align-items:center;margin-top:8px}
+    input[type="text"]{flex:1;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:#07151d;color:#e8f5ff}
+    button{padding:10px 14px;border-radius:8px;border:0;background:var(--accent);color:#1a1200;font-weight:700;cursor:pointer}
+    .hint{font-size:0.92rem;color:#c7d9e6;margin-top:8px}
+    .error{color:#ff9b9b;margin-top:8px}
+    .finalArea{display:none;margin-top:16px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.04)}
+    .success{background:linear-gradient(90deg, rgba(255,209,102,0.06), rgba(24,32,40,0.02));padding:10px;border-radius:8px;margin-top:12px;color:#e9f9ee}
+    .small{font-size:.86rem;color:#9fb0c2}
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-labelledby="title">
+    <h1 id="title">🦆 Sir Quackston’s Final Gate</h1>
+
+    <p>
+      The Duck does not welcome wanderers. Only those who followed the trail to the Shelter
+      House and decoded the dispatch may proceed. Speak the secret phrase you received there (case-insensitive).
+    </p>
+
+    <div class="row" aria-label="secret phrase">
+      <input id="phrase" type="text" placeholder="Enter secret phrase (from Step 3)" autocomplete="off" />
+      <button id="submitPhrase">Verify</button>
+    </div>
+
+    <div id="phraseMsg" class="hint small"></div>
+
+    <!-- FINAL PUZZLE AREA: hidden until correct phrase -->
+    <section id="finalArea" class="finalArea" aria-hidden="true">
+      <h2>Final Challenge — Read the Plaque</h2>
+      <p>
+        The Duck says the last secret is carved in stone. Use the monument's plaque to find the key.
+        <strong>Hint:</strong> pay attention to the text on the statue — the answer is a numeric key derived from the plaque.
+      </p>
+
+      <p class="small">(Pro tip for plaque solvers: there’s an acrostic / first-letter trick that points you to the engraved years.)</p>
+
+      <div class="row" style="margin-top:12px;">
+        <input id="finalKey" type="text" placeholder="Enter the final vault key" autocomplete="off" />
+        <button id="submitKey">Try Key</button>
+      </div>
+
+      <div id="keyMsg" class="error" role="status" aria-live="polite"></div>
+
+      <div id="winBox" class="success" style="display:none">
+        <strong>🏆 Vault opened!</strong>
+        <p>Congratulations — you have unlocked the Golden Duck's treasure. Be the first to retrieve it and claim the prize!</p>
+      </div>
+    </section>
+
+    <p class="small" style="margin-top:14px">If you believe you have the right phrase but the page won't unlock, check with the Game Master at the Shelter House.</p>
+
+  </main>
+
+<script>
+/*
+  CLIENT-SIDE VALIDATION LOGIC
+  - allowedPhrases (base64-encoded) are checked against user input (case-insensitive)
+  - only if a phrase matches do we reveal the final puzzle area
+  - the final correct key is stored as an array of character codes (mild obfuscation)
+  - note: this is client-side; for stronger protection validate server-side
+*/
+
+(function(){
+  // Base64-encoded allowed phrases (so the strings are not in plain text)
+  // Decoded values (for reference): "goodale told me" and "goodale"
+  const encodedAllowed = [
+    "Z29vZGFsZSB0b2xkIG1l",  // "goodale told me"
+    "Z29vZGFsZQ=="           // "goodale"
+  ];
+
+  // helper: decode base64 safely
+  function b64decode(s) {
+    try { return decodeURIComponent(escape(window.atob(s))); }
+    catch(e){ try { return window.atob(s); } catch(e2) { return ""; } }
+  }
+
+  // build a set of allowed normalized phrases
+  const allowed = new Set(encodedAllowed.map(b64decode).map(s => s.trim().toLowerCase()));
+
+  // obfuscated final key stored as character codes (ASCII for digits '1','7','8','2','1','8','6','8')
+  const finalCharCodes = [49,55,56,50,49,56,54,56]; // -> "17821868"
+  function constructFinal() {
+    return String.fromCharCode(...finalCharCodes);
+  }
+
+  const phraseInput = document.getElementById('phrase');
+  const phraseBtn   = document.getElementById('submitPhrase');
+  const phraseMsg   = document.getElementById('phraseMsg');
+  const finalArea   = document.getElementById('finalArea');
+  const finalInput  = document.getElementById('finalKey');
+  const finalBtn    = document.getElementById('submitKey');
+  const keyMsg      = document.getElementById('keyMsg');
+  const winBox      = document.getElementById('winBox');
+
+  phraseBtn.addEventListener('click', checkPhrase);
+  phraseInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') checkPhrase(); });
+
+  function sanitize(s){
+    return (s||"").toString().trim().toLowerCase().replace(/[^\w\s]/g,' ');
+  }
+
+  function checkPhrase(){
+    const v = sanitize(phraseInput.value);
+    if(!v){ phraseMsg.textContent = "Enter the phrase you were given at the Shelter House."; return; }
+    if(allowed.has(v)){
+      // reveal final area
+      finalArea.style.display = 'block';
+      finalArea.setAttribute('aria-hidden','false');
+      phraseMsg.textContent = "Phrase accepted. The final challenge is revealed.";
+      phraseInput.disabled = true;
+      phraseBtn.disabled = true;
+      // small focus move
+      setTimeout(()=> finalInput.focus(), 200);
+    } else {
+      phraseMsg.textContent = "⛔ That phrase does not match what the Duck expected. Retrace your steps.";
+    }
+  }
+
+  // final key check
+  finalBtn.addEventListener('click', checkFinal);
+  finalInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') checkFinal(); });
+
+  function checkFinal(){
+    const attempt = (finalInput.value||"").toString().trim();
+    const expected = constructFinal();
+    if(!attempt){
+      keyMsg.textContent = "Enter the numeric key carved in the monument.";
+      return;
+    }
+    if(attempt === expected){
+      keyMsg.textContent = "";
+      winBox.style.display = 'block';
+      finalInput.disabled = true;
+      finalBtn.disabled = true;
+      // Optionally: reveal a small celebratory animation / sound (omitted for simplicity)
+    } else {
+      keyMsg.textContent = "⛔ Incorrect key. The statue keeps its secret.";
+    }
+  }
+
+  // small anti-cheat: if someone tries to inspect the page and types something obvious,
+  // this will present a little snark. (purely decorative)
+  window.addEventListener('keydown', (e) => {
+    if(e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i'){
+      // devtools probable; gentle message in the phrase area
+      phraseMsg.textContent = "You found the tools. The Duck applauds the curiosity — but follow the path, not the shortcuts.";
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
