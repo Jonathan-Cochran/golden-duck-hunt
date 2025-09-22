@@ -19,6 +19,13 @@
     .finalArea{display:none;margin-top:16px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.04)}
     .success{background:linear-gradient(90deg, rgba(255,209,102,0.06), rgba(24,32,40,0.02));padding:10px;border-radius:8px;margin-top:12px;color:#e9f9ee}
     .small{font-size:.86rem;color:#9fb0c2}
+    #confettiCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
@@ -41,7 +48,7 @@
     <section id="finalArea" class="finalArea" aria-hidden="true">
       <h2>Final Challenge — Read the Plaque</h2>
       <p>
-        The Duck says the last secret is carved in stone. Use the monument's plaque to find the key. <br />
+        The Duck says the last secret is carved in stone. Use the monument's plaque to find the key. <br /><br />
         Feathers fade, but marble does not lie.<br />
         Look where my story begins,<br />
         Look where my story ends.<br />
@@ -65,23 +72,16 @@
   </main>
 
 <script>
-/*
-  CLIENT-SIDE VALIDATION LOGIC
-  - allowedPhrases (base64-encoded) are checked against user input (case-insensitive)
-  - only if a phrase matches do we reveal the final puzzle area
-  - the final correct key is stored as an array of character codes (mild obfuscation)
-  - note: this is client-side; for stronger protection validate server-side
-*/
 
 (function(){
-  // Base64-encoded allowed phrases (so the strings are not in plain text)
-  // Decoded values (for reference): "goodale told me" and "goodale"
-  const encodedAllowed = [
-    "Z29vZGFsZSB0b2xkIG1l",  // "goodale told me"
-    "Z29vZGFsZQ=="           // "goodale"
-  ];
+const encodedAllowed = [
+  "Z29vZGFsZSB0b2xkIG1l", 
+  "Z29vZGFsZQ==",   
+  "R29vZGFsZSB0b2xkIG1lIHRoZSB2YXVsdCBpcyB3aGVyZSBoaXMgYmlydGggYW5kIGRlYXRoIHllYXJzIGFyZSBjYXJ2ZWQu",  
+  "R29vZGFsZSB0b2xkIG1lIHRoZSB2YXVsdCBpcyB3aGVyZSBoaXMgYmlydGggYW5kIGRlYXRoIHllYXJzIGFyZSBjYXJ2ZWQ="   
+];
 
-  // helper: decode base64 safely
+
   function b64decode(s) {
     try { return decodeURIComponent(escape(window.atob(s))); }
     catch(e){ try { return window.atob(s); } catch(e2) { return ""; } }
@@ -90,8 +90,8 @@
   // build a set of allowed normalized phrases
   const allowed = new Set(encodedAllowed.map(b64decode).map(s => s.trim().toLowerCase()));
 
-  // obfuscated final key stored as character codes (ASCII for digits '1','7','8','2','1','8','6','8')
-  const finalCharCodes = [49,55,56,50,49,56,54,56]; // -> "17821868"
+
+  const finalCharCodes = [49,55,56,50,49,56,54,56];
   function constructFinal() {
     return String.fromCharCode(...finalCharCodes);
   }
@@ -145,7 +145,7 @@
       winBox.style.display = 'block';
       finalInput.disabled = true;
       finalBtn.disabled = true;
-      // Optionally: reveal a small celebratory animation / sound (omitted for simplicity)
+      launchConfetti();  // 🎉 trigger celebration
     } else {
       keyMsg.textContent = "⛔ Incorrect key. The statue keeps its secret.";
     }
@@ -161,6 +161,65 @@
   });
 
 })();
+
+// simple confetti burst
+function launchConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const confetti = [];
+
+  // create 150 pieces
+  for (let i = 0; i < 150; i++) {
+    confetti.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      r: Math.random() * 6 + 4,
+      d: Math.random() * 50,
+      color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+      tilt: Math.random() * 10 - 10
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    confetti.forEach(c => {
+      ctx.beginPath();
+      ctx.fillStyle = c.color;
+      ctx.moveTo(c.x, c.y);
+      ctx.lineTo(c.x + c.tilt, c.y + c.r);
+      ctx.lineTo(c.x - c.tilt, c.y + c.r);
+      ctx.closePath();
+      ctx.fill();
+    });
+    update();
+  }
+
+  function update() {
+    confetti.forEach(c => {
+      c.y += Math.cos(c.d) + 1 + c.r / 2;
+      c.x += Math.sin(c.d);
+      if (c.y > canvas.height) {
+        c.y = -10;
+        c.x = Math.random() * canvas.width;
+      }
+    });
+  }
+
+  let duration = 4000; // 4s
+  let end = Date.now() + duration;
+
+  (function animate() {
+    draw();
+    if (Date.now() < end) {
+      requestAnimationFrame(animate);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  })();
+}  
 </script>
+<canvas id="confettiCanvas"></canvas> 
 </body>
 </html>
